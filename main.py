@@ -41,7 +41,6 @@ st.header("1. 장르별 영화 편수 (도넛)")
 genre_count = df["장르"].value_counts().reset_index()
 genre_count.columns = ["장르", "편수"]
 
-
 fig = px.pie(
     genre_count,
     names="장르",
@@ -54,7 +53,6 @@ fig.update_traces(
 )
 
 st.plotly_chart(fig, use_container_width=True)
-
 
 st.text_input("이 그래프로 알 수 있는 것", key="note1")
 
@@ -78,7 +76,6 @@ fig.update_traces(
 )
 
 st.plotly_chart(fig, use_container_width=True)
-
 
 st.text_input("이 그래프로 알 수 있는 것", key="note2")
 
@@ -138,7 +135,6 @@ st.plotly_chart(fig, use_container_width=True)
 영화이름 = 가장많은관객영화["movieNm"]
 총관객수 = 가장많은관객영화["total_audi"]
 
-
 st.write(
     f"대부분의 영화는 **{가장많은구간.left:,.0f}명~"
     f"{가장많은구간.right:,.0f}명** 구간에 몰려 있으며, "
@@ -149,7 +145,6 @@ st.write(
     f"총 관객이 가장 많은 영화는 **{영화이름}**으로, "
     f"총 관객은 **{총관객수:,.0f}명**입니다."
 )
-
 
 st.text_input("이 그래프로 알 수 있는 것", key="note3")
 
@@ -193,12 +188,60 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-
 st.text_input("이 그래프로 알 수 있는 것", key="note4")
 
 
 st.divider()
 
 
+# --------------------------------------------------
+# 그래프 5. 장르별 총 관객 박스플롯
+# --------------------------------------------------
+st.header("5. 장르별 총 관객 분포 (박스플롯)")
+
+# 장르별 영화 편수를 계산합니다
+장르별영화수 = df["장르"].value_counts()
+
+# 영화가 10편 이상인 장르만 선택합니다
+많은장르 = 장르별영화수[장르별영화수 >= 10].index
+
+박스플롯데이터 = df[
+    df["장르"].isin(많은장르)
+].dropna(
+    subset=["장르", "total_audi", "movieNm"]
+).copy()
+
+fig = px.box(
+    박스플롯데이터,
+    x="장르",
+    y="total_audi",
+    points="outliers",
+    hover_name="movieNm",
+    labels={
+        "장르": "장르",
+        "total_audi": "총 관객"
+    }
+)
+
+# 이상치 점에 마우스를 올렸을 때 영화명이 보이게 합니다
+fig.update_traces(
+    hovertemplate="<b>%{hovertext}</b><br>"
+                  "총 관객: %{y:,.0f}명"
+                  "<extra></extra>"
+)
+
+fig.update_layout(
+    xaxis_title="장르",
+    yaxis_title="총 관객"
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+st.text_input("이 그래프로 알 수 있는 것", key="note5")
+
+
+st.divider()
+
+
 # 앞으로 그래프를 계속 추가할 구역
-st.header("5. (다음 그래프를 여기에 추가)")
+st.header("6. (다음 그래프를 여기에 추가)")
