@@ -23,7 +23,8 @@ def load_data():
     # 장르가 여러 개(|)로 적힌 영화는 첫 번째 장르만 씁니다
     df["장르"] = df["genre"].fillna("기타").astype(str).str.split("|").str[0]
 
-    # 총 관객을 숫자로 변환합니다
+    # 숫자 데이터를 숫자형으로 변환합니다
+    df["first_scrn"] = pd.to_numeric(df["first_scrn"], errors="coerce")
     df["total_audi"] = pd.to_numeric(df["total_audi"], errors="coerce")
 
     return df
@@ -48,7 +49,6 @@ fig = px.pie(
     hole=0.45
 )
 
-# 조각에 마우스를 올리면 편수와 비율이 보이게 합니다
 fig.update_traces(
     hovertemplate="%{label}<br>영화 편수: %{value}편<br>비율: %{percent}<extra></extra>"
 )
@@ -56,7 +56,6 @@ fig.update_traces(
 st.plotly_chart(fig, use_container_width=True)
 
 
-# '이 그래프로 알 수 있는 것' 한 문장을 적는 자리
 st.text_input("이 그래프로 알 수 있는 것", key="note1")
 
 
@@ -74,7 +73,6 @@ fig = px.treemap(
     values="total_audi"
 )
 
-# 영화 칸에 마우스를 올리면 영화명과 총 관객이 보이게 합니다
 fig.update_traces(
     hovertemplate="영화명: %{label}<br>총 관객: %{value:,.0f}명<extra></extra>"
 )
@@ -82,7 +80,6 @@ fig.update_traces(
 st.plotly_chart(fig, use_container_width=True)
 
 
-# '이 그래프로 알 수 있는 것' 한 문장을 적는 자리
 st.text_input("이 그래프로 알 수 있는 것", key="note2")
 
 
@@ -94,10 +91,8 @@ st.divider()
 # --------------------------------------------------
 st.header("3. 영화별 총 관객 분포")
 
-# 결측치를 제외합니다
 관객데이터 = df.dropna(subset=["total_audi"]).copy()
 
-# 히스토그램을 그립니다
 fig = px.histogram(
     관객데이터,
     x="total_audi",
@@ -120,7 +115,6 @@ fig.update_traces(
 st.plotly_chart(fig, use_container_width=True)
 
 
-# 가장 많은 영화가 몰려 있는 구간을 계산합니다
 최소관객 = 관객데이터["total_audi"].min()
 최대관객 = 관객데이터["total_audi"].max()
 
@@ -137,7 +131,6 @@ st.plotly_chart(fig, use_container_width=True)
 가장많은구간 = 구간별영화수.idxmax()
 가장많은구간영화수 = 구간별영화수.max()
 
-# 총 관객이 가장 많은 영화를 찾습니다
 가장많은관객영화 = 관객데이터.loc[
     관객데이터["total_audi"].idxmax()
 ]
@@ -146,7 +139,6 @@ st.plotly_chart(fig, use_container_width=True)
 총관객수 = 가장많은관객영화["total_audi"]
 
 
-# 그래프 아래에 해석 문구를 보여 줍니다
 st.write(
     f"대부분의 영화는 **{가장많은구간.left:,.0f}명~"
     f"{가장많은구간.right:,.0f}명** 구간에 몰려 있으며, "
@@ -159,12 +151,54 @@ st.write(
 )
 
 
-# '이 그래프로 알 수 있는 것' 한 문장을 적는 자리
 st.text_input("이 그래프로 알 수 있는 것", key="note3")
 
 
 st.divider()
 
 
+# --------------------------------------------------
+# 그래프 4. 개봉일 스크린수와 총 관객의 관계
+# --------------------------------------------------
+st.header("4. 개봉일 스크린수와 총 관객의 관계")
+
+산점도데이터 = df.dropna(
+    subset=["first_scrn", "total_audi", "movieNm", "장르"]
+).copy()
+
+fig = px.scatter(
+    산점도데이터,
+    x="first_scrn",
+    y="total_audi",
+    color="장르",
+    hover_name="movieNm",
+    labels={
+        "first_scrn": "개봉일 스크린수",
+        "total_audi": "총 관객",
+        "장르": "장르"
+    }
+)
+
+fig.update_traces(
+    hovertemplate="<b>%{hovertext}</b><br>"
+                  "개봉일 스크린수: %{x:,.0f}개<br>"
+                  "총 관객: %{y:,.0f}명"
+                  "<extra></extra>"
+)
+
+fig.update_layout(
+    xaxis_title="개봉일 스크린수",
+    yaxis_title="총 관객"
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+
+st.text_input("이 그래프로 알 수 있는 것", key="note4")
+
+
+st.divider()
+
+
 # 앞으로 그래프를 계속 추가할 구역
-st.header("4. (다음 그래프를 여기에 추가)")
+st.header("5. (다음 그래프를 여기에 추가)")
