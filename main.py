@@ -1,183 +1,50 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import numpy as np
-
-
-st.set_page_config(
-    page_title="영화 데이터 그래프 도감 2 - 분포와 관계",
-    layout="wide"
-)
-
-st.title("영화 데이터 그래프 도감 2 - 분포와 관계")
-
-
-DATA_URL = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis_movies.csv"
-
-
-@st.cache_data
-def load_data():
-    # 1년간 박스오피스 10위권에 든 영화 216편의 요약표를 불러옵니다
-    df = pd.read_csv(DATA_URL)
-
-    # 장르가 여러 개(|)로 적힌 영화는 첫 번째 장르만 씁니다
-    df["장르"] = df["genre"].fillna("기타").astype(str).str.split("|").str[0]
-
-    # 숫자 데이터를 숫자형으로 변환합니다
-    df["first_scrn"] = pd.to_numeric(df["first_scrn"], errors="coerce")
-    df["total_audi"] = pd.to_numeric(df["total_audi"], errors="coerce")
-
-    return df
-
-
-df = load_data()
-
-
 # --------------------------------------------------
-# 그래프 1. 장르별 영화 편수 도넛
+# 그래프 6. 첫 주 관객을 크기로 넣은 버블 그래프
 # --------------------------------------------------
-st.header("1. 장르별 영화 편수 (도넛)")
+st.header("6. 개봉일 스크린수와 총 관객의 관계 (버블 그래프)")
 
-genre_count = df["장르"].value_counts().reset_index()
-genre_count.columns = ["장르", "편수"]
-
-fig = px.pie(
-    genre_count,
-    names="장르",
-    values="편수",
-    hole=0.45
-)
-
-fig.update_traces(
-    hovertemplate="%{label}<br>영화 편수: %{value}편<br>비율: %{percent}<extra></extra>"
-)
-
-st.plotly_chart(fig, use_container_width=True)
-
-st.text_input("이 그래프로 알 수 있는 것", key="note1")
-
-
-st.divider()
-
-
-# --------------------------------------------------
-# 그래프 2. 장르 안에 영화가 들어 있는 트리맵
-# --------------------------------------------------
-st.header("2. 장르별 영화 총 관객 트리맵")
-
-fig = px.treemap(
-    df,
-    path=["장르", "movieNm"],
-    values="total_audi"
-)
-
-fig.update_traces(
-    hovertemplate="영화명: %{label}<br>총 관객: %{value:,.0f}명<extra></extra>"
-)
-
-st.plotly_chart(fig, use_container_width=True)
-
-st.text_input("이 그래프로 알 수 있는 것", key="note2")
-
-
-st.divider()
-
-
-# --------------------------------------------------
-# 그래프 3. 총 관객 히스토그램
-# --------------------------------------------------
-st.header("3. 영화별 총 관객 분포")
-
-관객데이터 = df.dropna(subset=["total_audi"]).copy()
-
-fig = px.histogram(
-    관객데이터,
-    x="total_audi",
-    nbins=10,
-    labels={
-        "total_audi": "총 관객",
-        "count": "영화 편수"
-    }
-)
-
-fig.update_layout(
-    xaxis_title="총 관객",
-    yaxis_title="영화 편수"
-)
-
-fig.update_traces(
-    hovertemplate="총 관객 구간: %{x}<br>영화 편수: %{y}편<extra></extra>"
-)
-
-st.plotly_chart(fig, use_container_width=True)
-
-
-최소관객 = 관객데이터["total_audi"].min()
-최대관객 = 관객데이터["total_audi"].max()
-
-구간경계 = np.linspace(최소관객, 최대관객, 11)
-
-관객데이터["관객구간"] = pd.cut(
-    관객데이터["total_audi"],
-    bins=구간경계,
-    include_lowest=True
-)
-
-구간별영화수 = 관객데이터["관객구간"].value_counts().sort_index()
-
-가장많은구간 = 구간별영화수.idxmax()
-가장많은구간영화수 = 구간별영화수.max()
-
-가장많은관객영화 = 관객데이터.loc[
-    관객데이터["total_audi"].idxmax()
-]
-
-영화이름 = 가장많은관객영화["movieNm"]
-총관객수 = 가장많은관객영화["total_audi"]
-
-st.write(
-    f"대부분의 영화는 **{가장많은구간.left:,.0f}명~"
-    f"{가장많은구간.right:,.0f}명** 구간에 몰려 있으며, "
-    f"이 구간에는 **{가장많은구간영화수}편**의 영화가 있습니다."
-)
-
-st.write(
-    f"총 관객이 가장 많은 영화는 **{영화이름}**으로, "
-    f"총 관객은 **{총관객수:,.0f}명**입니다."
-)
-
-st.text_input("이 그래프로 알 수 있는 것", key="note3")
-
-
-st.divider()
-
-
-# --------------------------------------------------
-# 그래프 4. 개봉일 스크린수와 총 관객의 관계
-# --------------------------------------------------
-st.header("4. 개봉일 스크린수와 총 관객의 관계")
-
-산점도데이터 = df.dropna(
-    subset=["first_scrn", "total_audi", "movieNm", "장르"]
+버블데이터 = df.dropna(
+    subset=[
+        "first_scrn",
+        "total_audi",
+        "first_week_audi",
+        "movieNm",
+        "장르"
+    ]
 ).copy()
 
+# 첫 주 관객을 숫자형으로 변환합니다
+버블데이터["first_week_audi"] = pd.to_numeric(
+    버블데이터["first_week_audi"],
+    errors="coerce"
+)
+
+버블데이터 = 버블데이터.dropna(
+    subset=["first_week_audi"]
+)
+
 fig = px.scatter(
-    산점도데이터,
+    버블데이터,
     x="first_scrn",
     y="total_audi",
+    size="first_week_audi",
     color="장르",
     hover_name="movieNm",
     labels={
         "first_scrn": "개봉일 스크린수",
         "total_audi": "총 관객",
+        "first_week_audi": "첫 주 관객",
         "장르": "장르"
-    }
+    },
+    size_max=50
 )
 
+# 점에 마우스를 올리면 영화명과 주요 정보가 보이게 합니다
 fig.update_traces(
     hovertemplate="<b>%{hovertext}</b><br>"
                   "개봉일 스크린수: %{x:,.0f}개<br>"
-                  "총 관객: %{y:,.0f}명"
+                  "총 관객: %{y:,.0f}명<br>"
+                  "첫 주 관객: %{marker.size:,.0f}명"
                   "<extra></extra>"
 )
 
@@ -188,60 +55,12 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-st.text_input("이 그래프로 알 수 있는 것", key="note4")
 
-
-st.divider()
-
-
-# --------------------------------------------------
-# 그래프 5. 장르별 총 관객 박스플롯
-# --------------------------------------------------
-st.header("5. 장르별 총 관객 분포 (박스플롯)")
-
-# 장르별 영화 편수를 계산합니다
-장르별영화수 = df["장르"].value_counts()
-
-# 영화가 10편 이상인 장르만 선택합니다
-많은장르 = 장르별영화수[장르별영화수 >= 10].index
-
-박스플롯데이터 = df[
-    df["장르"].isin(많은장르)
-].dropna(
-    subset=["장르", "total_audi", "movieNm"]
-).copy()
-
-fig = px.box(
-    박스플롯데이터,
-    x="장르",
-    y="total_audi",
-    points="outliers",
-    hover_name="movieNm",
-    labels={
-        "장르": "장르",
-        "total_audi": "총 관객"
-    }
-)
-
-# 이상치 점에 마우스를 올렸을 때 영화명이 보이게 합니다
-fig.update_traces(
-    hovertemplate="<b>%{hovertext}</b><br>"
-                  "총 관객: %{y:,.0f}명"
-                  "<extra></extra>"
-)
-
-fig.update_layout(
-    xaxis_title="장르",
-    yaxis_title="총 관객"
-)
-
-st.plotly_chart(fig, use_container_width=True)
-
-st.text_input("이 그래프로 알 수 있는 것", key="note5")
+st.text_input("이 그래프로 알 수 있는 것", key="note6")
 
 
 st.divider()
 
 
 # 앞으로 그래프를 계속 추가할 구역
-st.header("6. (다음 그래프를 여기에 추가)")
+st.header("7. (다음 그래프를 여기에 추가)")
