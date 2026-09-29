@@ -12,7 +12,7 @@ st.set_page_config(
 st.title("영화 데이터 그래프 도감 2 - 분포와 관계")
 
 
-DATA_URL = "https://raw.githubusercontent.com/happykth/data/main/kobis_movies.csv"
+DATA_URL = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis_movies.csv"
 
 
 @st.cache_data
@@ -50,6 +50,11 @@ def load_data():
 
     df["total_audi"] = pd.to_numeric(
         df["total_audi"],
+        errors="coerce"
+    )
+
+    df["days_in_top10"] = pd.to_numeric(
+        df["days_in_top10"],
         errors="coerce"
     )
 
@@ -167,8 +172,6 @@ st.plotly_chart(
     use_container_width=True
 )
 
-
-# 가장 많은 영화가 들어 있는 구간 계산
 최소관객 = 관객데이터["total_audi"].min()
 최대관객 = 관객데이터["total_audi"].max()
 
@@ -306,11 +309,6 @@ fig = px.box(
     }
 )
 
-fig.update_layout(
-    xaxis_title="장르",
-    yaxis_title="총 관객"
-)
-
 st.plotly_chart(
     fig,
     use_container_width=True
@@ -340,7 +338,6 @@ st.header("6. 개봉일 스크린수와 총 관객의 관계 (버블 그래프)"
     ]
 ).copy()
 
-# 버블 크기로 사용할 값이 0보다 큰 영화만 사용
 버블데이터 = 버블데이터[
     버블데이터["first_week_audi"] > 0
 ].copy()
@@ -400,7 +397,6 @@ st.header("7. 제작 국가와 장르별 영화 편수 (선버스트)")
     ]
 ).copy()
 
-# 빈 문자열을 기타로 처리
 선버스트데이터["제작국가"] = (
     선버스트데이터["제작국가"]
     .replace("", "기타")
@@ -411,8 +407,6 @@ st.header("7. 제작 국가와 장르별 영화 편수 (선버스트)")
     .replace("", "기타")
 )
 
-# 영화 한 편 = 1개로 세기 때문에
-# values를 지정하지 않으면 행의 개수가 영화 편수가 됩니다.
 fig = px.sunburst(
     선버스트데이터,
     path=["제작국가", "장르"]
@@ -440,6 +434,48 @@ st.divider()
 
 
 # ==================================================
-# 다음 그래프
+# 8. TOP 10 체류 기간과 총 관객의 관계
 # ==================================================
-st.header("8. (다음 그래프를 여기에 추가)")
+st.header("8. TOP 10 체류 기간과 총 관객의 관계")
+
+관계데이터 = df.dropna(
+    subset=[
+        "days_in_top10",
+        "total_audi",
+        "movieNm"
+    ]
+).copy()
+
+fig = px.scatter(
+    관계데이터,
+    x="days_in_top10",
+    y="total_audi",
+    hover_name="movieNm",
+    labels={
+        "days_in_top10": "TOP 10에 머문 날수",
+        "total_audi": "총 관객"
+    }
+)
+
+fig.update_traces(
+    hovertemplate=
+    "<b>%{hovertext}</b><br>"
+    "TOP 10에 머문 날수: %{x}일<br>"
+    "총 관객: %{y:,.0f}명"
+    "<extra></extra>"
+)
+
+fig.update_layout(
+    xaxis_title="TOP 10에 머문 날수",
+    yaxis_title="총 관객"
+)
+
+st.plotly_chart(
+    fig,
+    use_container_width=True
+)
+
+st.text_input(
+    "이 그래프로 알 수 있는 것",
+    key="note8"
+)
